@@ -1,0 +1,28 @@
+{
+  "command": null,
+  "url": "http://127.0.0.1:5173",
+  "readyTimeoutMs": 120000,
+  "env": {},
+  "windows": {
+    "driveMappings": {}
+  },
+  "executors": {
+    "powershellCore": {
+      "enabled": false,
+      "command": "pwsh"
+    }
+  },
+  "qa": {
+    "display": ":96",
+    "size": "1920x1080",
+    "fps": 30,
+    "record": true,
+    "cockpit": true,
+    "netlog": false,
+    "browserRestartLimit": 1,
+    "telemetry": true,
+    "telemetryIntervalMs": 2000,
+    "telemetryBrowserMetricsEvery": 3,
+    "telemetryFpsWindowMs": 400
+  }
+}

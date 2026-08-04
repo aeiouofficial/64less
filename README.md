@@ -1,85 +1,67 @@
 # 64less
-64less runs Windows-oriented Node/web workspaces on Linux by adapting explicit workspace assumptions instead of emulating Windows.  This release focuses on portable offline dependency handling, explicit executor boundaries, long-run headed browser QA, crash continuity, and physically verifiable input.
 
-Highlights
+**Run Windows-first web workspaces natively on Linux. No Windows image required.**
 
-Conservative Windows workspace adaptation — supports a tested subset of shell, path, environment, npm lifecycle, and launcher conventions without spoofing process.platform or native-module ABI.
+64less adapts the *workspace assumptions* that make otherwise portable Node/web projects feel Windows-only: shell syntax, Windows paths, launcher conventions, environment names, local browser startup, and QA tooling. It does not emulate a Windows kernel and it does not claim that Linux Chromium is equivalent to Windows D3D12/WebGPU.
 
-Portable offline package caches — deterministic manifests, content-addressed archives, SHA-256 validation, path confinement, package identity checks, and explicit OS/CPU/libc matching.
+## Why
 
-Capability-scoped executors — introduces an opt-in powershell-core executor for narrow file-scoped PowerShell use; opaque/inline PowerShell remains unsupported.
+A large class of "Windows workspaces" are actually portable web applications surrounded by Windows-specific glue. Running an entire Windows VM to execute that glue is expensive and makes local agent QA awkward. Running everything through Wine can introduce a different set of browser and native-module problems.
 
-Headed Chromium QA — private X11 display support, Chromium/CDP diagnostics, readable browser logs, screenshots, crash-resistant MKV recording, and MP4 remux.
+64less takes a narrower approach:
 
-Physical input evidence — selectors may be resolved through CDP, but mouse/keyboard actions are emitted through X11/XTest and recorded in the session ledger.
+1. inspect the workspace;
+2. identify explicit Windows assumptions;
+3. translate only rules with known semantics;
+4. keep Node and native dependencies on the real Linux platform;
+5. run the local app normally;
+6. provide a headed Chromium QA session with persistent diagnostics and recording.
 
-Crash continuity — Chromium can restart inside the same evidence session while logs, recordings, telemetry, and prior events remain preserved.
+Unknown Windows-only behavior is reported instead of guessed.
 
-Local performance telemetry — process-group memory/CPU, selected CDP Performance metrics, and sampled requestAnimationFrame FPS are written locally to session evidence.
+For physical QA, `64less click` uses CDP only to resolve an element's on-screen position; the click itself is emitted through X11/XTest and is recorded in the input ledger.
 
-Offline-first runtime behavior — 64less does not download packages, browsers, or runtime tools during startup.
+## Current commands
 
-Compatibility boundary
-
-64less targets Windows-oriented web workspaces, not arbitrary Windows desktop software. Windows-only kernel APIs, registry/COM/services, native Windows graphics-driver behavior, and opaque platform-specific executables are outside the core runtime unless a future explicit executor supports a narrow use case.
-
-64less reports unsupported behavior rather than silently approximating it.
-
-Requirements
-
-Core CLI:
-
-Linux
-
-Node.js 20.11+
-
-Headed QA features additionally discover:
-
-Chromium/Chrome-compatible browser
-
-FFmpeg
-
-Xvfb or an existing X11 display
-
-Openbox
-
-xterm
-
-wmctrl
-
-X11/XTest libraries for the native input helper
-
-The portable Linux x64 asset bundles Node/npm and the 64less XTest helper. System browser/graphics/capture tools remain host capabilities and are reported by 64less doctor if missing.
-
-Quick start
-
+```bash
 64less inspect ./workspace
 64less doctor ./workspace
+64less deps ./workspace
 64less plan ./workspace --script dev
 64less run ./workspace --script dev
-
-Headed QA:
-
 64less qa ./workspace --script dev
-64less click ./workspace 'button[data-action="play"]'
+64less click ./workspace 'button[data-action=play]'
+64less sessions ./workspace
 64less summary ./workspace
+64less recover ./workspace
+```
 
-Offline package cache:
+For an offline dependency payload:
 
+```bash
 64less deps ./workspace --cache ./offline-tgz
+64less deps ./workspace --cache ./offline-tgz --repair
 64less deps ./workspace --cache ./offline-tgz --export-cache ./portable-cache
 64less deps ./workspace --import-cache ./portable-cache --repair
+```
 
-Verification
+`64less qa` creates `.64less/sessions/<timestamp>/` containing the command manifest, workspace output, Chromium stderr, a readable browser event log, full CDP console/network/page events, an input ledger, local resource/FPS telemetry, screenshots on request, optional Chromium netlog, an MKV recording, and an MP4 remux when FFmpeg can complete it.
 
-The public v0.3.0 tree passes:
+## Design boundary
 
-65 JavaScript syntax checks
+64less is for Windows-*oriented* web workspaces, not arbitrary Windows desktop applications. A project that requires Win32 kernel services, registry behavior, COM, a Windows graphics driver, or native Windows-only executable semantics is outside the core runtime. Optional compatibility plugins can handle selected cases later, but the core will keep a strict boundary.
 
-38 behavioral tests
+See `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/COMPATIBILITY_MODEL.md`, `docs/DEPENDENCY_NORMALIZATION.md`, `docs/OFFLINE_CACHE.md`, `docs/EXECUTORS.md`, `docs/TELEMETRY.md`, `docs/WORK_PLAN.md`, and `docs/ROADMAP.md`.
 
-native XTest helper build
 
-portable bundled-runtime --version and doctor checks
+## Portable offline bundle
 
-See docs/VALIDATION.md and CHANGELOG.md for the checked-in validation contract and release history.
+The source tree can stage a local offline controller bundle with its own Node/npm runtime:
+
+```bash
+./scripts/build-native.sh
+./scripts/build-portable.sh ./dist/64less-portable
+./dist/64less-portable/bin/64less-portable.sh doctor ./workspace
+```
+
+The bundle does not download Chromium or OS graphics tools. `doctor` discovers those capabilities from the isolated Linux environment and reports what is missing.

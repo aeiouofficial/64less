@@ -1,0 +1,28 @@
+{
+  "name": "64less",
+  "version": "0.3.0",
+  "description": "Run Windows-first web workspaces natively on Linux by adapting workspace assumptions instead of emulating Windows.",
+  "type": "module",
+  "bin": {
+    "64less": "./bin/64less.js"
+  },
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "test": "node --test test/*.test.js",
+    "verify": "npm run check && npm test"
+  },
+  "engines": {
+    "node": ">=20.11"
+  },
+  "license": "MIT",
+  "keywords": [
+    "linux",
+    "windows",
+    "workspace",
+    "compatibility",
+    "browser",
+    "qa",
+    "nodejs",
+    "webgame"
+  ]
+}
